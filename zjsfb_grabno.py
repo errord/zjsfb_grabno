@@ -12,7 +12,12 @@ import json
 import requests
 import threading
 from lxml import etree
-from config import *
+from ying import *
+
+"""
+todolist:
+  * 退出机制完善
+"""
 
 am_str = u'\xe4\xb8\x8a\xe5\x8d\x88' # 上午
 pm_str = u'\xe4\xb8\x8b\xe5\x8d\x88' # 下午
@@ -23,6 +28,7 @@ eunicode = etree._ElementUnicodeResult
 estrtypes = [str, unicode, estr, eunicode]
 
 done = False
+full_exit = False
 cur_oppointment_time = ""
 
 def is_login(html):
@@ -152,11 +158,11 @@ def doctor_gatecard(html, doctor):
     return gatecard
 
 def submit_oppointment(doctor_id, dept_type, numid_list):
-    global done
+    global done, full_exit
     
     def _start_oppointment(numid):
-        global done
-        if done:
+        global done, full_exit
+        if done or full_exit:
             return
         numid = doctor_id + '-' + str(nid)
         print "oppointment numid: %s dept_type: %s id: %s" % \
@@ -171,10 +177,10 @@ def submit_oppointment(doctor_id, dept_type, numid_list):
             return
         if result["R"] == 200:
             print "oppointment SUCCESS: %s" % result["res"]
-            done = True
+            full_exit = True
             return
         if config["oppointment_fail_action"] == 2:
-            done = True
+            full_exit = True
             return
 
     print "submit_oppointment params: doctor_id=%s dept_type=%s numid_list=%s" % \
@@ -190,6 +196,7 @@ def submit_oppointment(doctor_id, dept_type, numid_list):
         if clock > 0:
             time.sleep(clock)
             clock -= 0.01
+    full_exit = True
 
 def http_request(action, **kwargs):
     update_headers = {}
@@ -294,7 +301,8 @@ def oppointment(gatecard):
 
 def run():
     global cur_oppointment_time, done
-    while not (done is True and cur_oppointment_time == config["oppointment_time"]):
+    while not (done is True and cur_oppointment_time == config["oppointment_time"]) and \
+              full_exit is False:
         time.sleep(0.01)
         done = False
         action = "action_chankezhuanjia"
@@ -303,7 +311,10 @@ def run():
             continue
         gatecard = doctor_gatecard(html, config['doctor_name'])
         if gatecard is None:
-            return
+            if config["check_doctor_name"] == False:
+                return
+            else:
+                continue
         cur_gatecard = gatecard[config["gatecard_idx"]]
         cur_oppointment_time = cur_gatecard["time"][1]
         oppointment(cur_gatecard)
