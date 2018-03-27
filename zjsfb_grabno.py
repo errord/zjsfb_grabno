@@ -12,7 +12,8 @@ import json
 import requests
 import threading
 from lxml import etree
-from ying import *
+#from ying import *
+from ding import *
 
 """
 todolist:
@@ -311,12 +312,16 @@ def run():
             continue
         gatecard = doctor_gatecard(html, config['doctor_name'])
         if gatecard is None:
+            print 'no doctor...'
             if config["check_doctor_name"] == False:
                 return
             else:
                 continue
         cur_gatecard = gatecard[config["gatecard_idx"]]
         cur_oppointment_time = cur_gatecard["time"][1]
+        if cur_oppointment_time != config["oppointment_time"]:
+            print "time failed..."
+            continue
         oppointment(cur_gatecard)
     
 if __name__ == '__main__':
