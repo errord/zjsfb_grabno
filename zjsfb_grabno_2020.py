@@ -14,8 +14,8 @@ import requests
 import threading
 import ipdb
 from lxml import etree
-#from ying import *
-from ding import *
+from ying import *
+#from ding import *
 
 """
 todolist:
@@ -183,9 +183,9 @@ def submit_oppointment(doctor_id, dept_type, numid_list, order_type):
             print("submit_oppointment loads failed : %s" % e)
             return
         if result["R"] == 200:
-            if 'url' in result:
+            if 'url' in result and len(result['url']) > 1:
                 print("发现需要社保支持..")
-                print("[http request] GET url:%s" % url)
+                print("[http request] GET url:%s" % result['url'])
                 headers = get_headers({})
                 request = requests.get(result['url'], headers=headers)
                 if debug:
@@ -255,22 +255,6 @@ def http_request(action, **kwargs):
             print("response: %s" % html)
         return None
     return html
-
-'''
-def print_text(texts):
-    for text in texts:
-        if type(text) in estrtypes:
-            print(text)
-        else:
-            print(text.text)
-
-def print_str(s):
-    if type(s) is str:
-        print(s)
-    elif type(s) is unicode:
-        print(s.encode('utf8'))
-    print(s)
-'''
 
 def is_availability(gatecard):
     global done
@@ -350,12 +334,13 @@ def run():
 
             print("auto search time: %s" % config["oppointment_time"])
             has_time = False
-            for item in gatecard.items():
+            for (idx, item) in enumerate(gatecard.items()):
                 item = item[1]
                 item_time = item['time']
                 if item_time[1] == config["oppointment_time"]:
                     has_time = True
                     cur_oppointment_time = item_time[1]
+                    cur_gatecard = gatecard[idx+1]
                     print("search success %s %s" % (item_time[0], item_time[1]))
                     break
             if not has_time:
